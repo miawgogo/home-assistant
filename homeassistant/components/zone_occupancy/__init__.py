@@ -41,16 +41,16 @@ def setup_occupancy_component(hass, name, config):
         _LOGGER.error("%s config contains untrackable device", name)
         return
 
-    occupancy_zone = name
+    occupancy_zone = "{} Occupancy".format(name)
+    
     zone_id = 'zone.{}'.format(name)
 
     proximity = Occupancy(hass, occupancy_zone, occupancy_devices, zone_id)
-    proximity.entity_id = '{}.{}'.format(DOMAIN, occupancy_zone)
+    proximity.entity_id = '{}.{}'.format(DOMAIN, name)
 
     proximity.schedule_update_ha_state()
 
-    track_state_change(
-        hass, occupancy_devices, proximity.check_proximity_state_change)
+    track_state_change(hass, occupancy_devices, proximity.check_proximity_state_change)
 
     return True
 
@@ -66,12 +66,12 @@ def setup(hass, config):
 class Occupancy(Entity):
     """Representation of a zone_occupancy."""
 
-    def __init__(self, hass, zone_friendly_name, occupancy_devices, occupancy_zone):
+    def __init__(self, hass, zone_friendly_name, occupancy_devices, zone_id):
         """Initialize the proximity."""
         self.hass = hass
         self.friendly_name = zone_friendly_name
         self._tracking_devices = occupancy_devices
-        self._zone = occupancy_zone
+        self._zone = zone_id
         self._count = 0
 
     @property
