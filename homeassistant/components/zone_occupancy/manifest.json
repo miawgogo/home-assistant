@@ -1,0 +1,9 @@
+{
+    "domain": "zone_occupancy",
+    "name": "Zone Occupancy",
+    "documentation": "https://www.home-assistant.io/components/zone_occupancy",
+    "requirements": [],
+    "dependencies": [],
+    "codeowners": ["ioangogo"]
+  }
+  
