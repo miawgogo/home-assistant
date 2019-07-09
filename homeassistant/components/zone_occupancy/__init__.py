@@ -45,10 +45,10 @@ def setup_occupancy_component(hass, name, config):
     
     zone_id = 'zone.{}'.format(name)
 
-    proximity = Occupancy(hass, occupancy_zone, occupancy_devices, zone_id)
-    proximity.entity_id = '{}.{}'.format(DOMAIN, name)
+    ZoneOccupancyEntity = Occupancy(hass, occupancy_zone, occupancy_devices, zone_id)
+    ZoneOccupancyEntity.entity_id = 'sensor.{}'.format(name)
 
-    proximity.schedule_update_ha_state()
+    ZoneOccupancyEntity.schedule_update_ha_state()
 
     track_state_change(hass, occupancy_devices, proximity.check_proximity_state_change)
 
@@ -63,7 +63,7 @@ def setup(hass, config):
     return True
 
 
-class Occupancy(Entity):
+class ZoneOccupancy(Entity):
     """Representation of a zone_occupancy."""
 
     def __init__(self, hass, zone_friendly_name, occupancy_devices, zone_id):
