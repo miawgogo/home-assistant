@@ -11,7 +11,7 @@ LOOPBACK_NETWORKS = (
     ip_network("::ffff:127.0.0.0/104"),
 )
 
-# RFC6890 - Address allocation for Private Internets
+# RFC6890 & RFC4193(IPv6) - Address allocation for Private Internets
 PRIVATE_NETWORKS = (
     ip_network("fd00::/8"),
     ip_network("10.0.0.0/8"),
@@ -20,7 +20,10 @@ PRIVATE_NETWORKS = (
 )
 
 # RFC6890 - Link local ranges
-LINK_LOCAL_NETWORK = ip_network("169.254.0.0/16")
+LINK_LOCAL_NETWORK = (
+    ip_network("169.254.0.0/16"),
+    ip_address("fe80::/10"),
+)
 
 
 def is_loopback(address: Union[IPv4Address, IPv6Address]) -> bool:
@@ -35,7 +38,8 @@ def is_private(address: Union[IPv4Address, IPv6Address]) -> bool:
 
 def is_link_local(address: Union[IPv4Address, IPv6Address]) -> bool:
     """Check if an address is link local."""
-    return address in LINK_LOCAL_NETWORK
+    return any(address in network for network in LINK_LOCAL_NETWORKS)
+
 
 
 def is_local(address: Union[IPv4Address, IPv6Address]) -> bool:
