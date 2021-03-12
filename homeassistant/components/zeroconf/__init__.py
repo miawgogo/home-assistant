@@ -198,12 +198,21 @@ def _register_hass_zc_service(hass, zeroconf, uuid):
     # Set old base URL based on external or internal
     params["base_url"] = params["external_url"] or params["internal_url"]
 
-    host_ip = util.get_local_ip()
+    host_ip4 = util.get_local_ip()
+    host_ip6 = util.get_local_ip6()
 
     try:
-        host_ip_pton = socket.inet_pton(socket.AF_INET, host_ip)
+        host_ip4_pton = socket.inet_pton(socket.AF_INET, host_ip4)
     except OSError:
-        host_ip_pton = socket.inet_pton(socket.AF_INET6, host_ip)
+        # Handle IPv4 via transistion mechanisms
+        host_ip4_pton = socket.inet_pton(socket.AF_INET6, host_ip4)
+
+    try:
+        host_ip6_pton = socket.inet_pton(socket.AF_INET6, host_ip6)
+    except OSError:
+        # There is probably no address, so it should just be null
+        host_ip6_pton = None
+        _LOGGER.error("IPv6 address invalid")
 
     _suppress_invalid_properties(params)
 
@@ -211,7 +220,7 @@ def _register_hass_zc_service(hass, zeroconf, uuid):
         ZEROCONF_TYPE,
         name=f"{valid_location_name}.{ZEROCONF_TYPE}",
         server=f"{uuid}.local.",
-        addresses=[host_ip_pton],
+        addresses=[host_ip4_pton, host_ip6_pton],
         port=hass.http.server_port,
         properties=params,
     )

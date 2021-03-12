@@ -1,103 +1,60 @@
 """Helper methods for various modules."""
 import asyncio
 from datetime import datetime, timedelta
-import enum
-from functools import wraps
-import random
-import re
-import socket
-import string
 import threading
+import re
+import enum
+import socket
+import random
+import string
+from functools import wraps
 from types import MappingProxyType
+from util.network import is_link_local
 from typing import (
     Any,
-    Callable,
-    Coroutine,
-    Iterable,
-    KeysView,
     Optional,
     TypeVar,
-    Union,
+    Callable,
+    KeysView,
+    Union,  # noqa
+    Iterable,
+    Coroutine,
 )
 
 import slugify as unicode_slug
 
-from ..helpers.deprecation import deprecated_function
 from .dt import as_local, utcnow
 
+# pylint: disable=invalid-name
 T = TypeVar("T")
-U = TypeVar("U")  # pylint: disable=invalid-name
-ENUM_T = TypeVar("ENUM_T", bound=enum.Enum)  # pylint: disable=invalid-name
+U = TypeVar("U")
+ENUM_T = TypeVar("ENUM_T", bound=enum.Enum)
+# pylint: enable=invalid-name
 
 RE_SANITIZE_FILENAME = re.compile(r"(~|\.\.|/|\\)")
 RE_SANITIZE_PATH = re.compile(r"(~|\.(\.)+)")
 
 
-def raise_if_invalid_filename(filename: str) -> None:
-    """
-    Check if a filename is valid.
-
-    Raises a ValueError if the filename is invalid.
-    """
-    if RE_SANITIZE_FILENAME.sub("", filename) != filename:
-        raise ValueError(f"{filename} is not a safe filename")
-
-
-def raise_if_invalid_path(path: str) -> None:
-    """
-    Check if a path is valid.
-
-    Raises a ValueError if the path is invalid.
-    """
-    if RE_SANITIZE_PATH.sub("", path) != path:
-        raise ValueError(f"{path} is not a safe path")
-
-
-@deprecated_function(replacement="raise_if_invalid_filename")
 def sanitize_filename(filename: str) -> str:
-    """Check if a filename is safe.
-
-    Only to be used to compare to original filename to check if changed.
-    If result changed, the given path is not safe and should not be used,
-    raise an error.
-
-    DEPRECATED.
-    """
-    # Backwards compatible fix for misuse of method
-    if RE_SANITIZE_FILENAME.sub("", filename) != filename:
-        return ""
-    return filename
+    r"""Sanitize a filename by removing .. / and \\."""
+    return RE_SANITIZE_FILENAME.sub("", filename)
 
 
-@deprecated_function(replacement="raise_if_invalid_path")
 def sanitize_path(path: str) -> str:
-    """Check if a path is safe.
-
-    Only to be used to compare to original path to check if changed.
-    If result changed, the given path is not safe and should not be used,
-    raise an error.
-
-    DEPRECATED.
-    """
-    # Backwards compatible fix for misuse of method
-    if RE_SANITIZE_PATH.sub("", path) != path:
-        return ""
-    return path
+    """Sanitize a path by removing ~ and .."""
+    return RE_SANITIZE_PATH.sub("", path)
 
 
-def slugify(text: str, *, separator: str = "_") -> str:
+def slugify(text: str) -> str:
     """Slugify a given text."""
-    if text == "":
-        return ""
-    slug = unicode_slug.slugify(text, separator=separator)
-    return "unknown" if slug == "" else slug
+    return unicode_slug.slugify(text, separator="_")  # type: ignore
 
 
 def repr_helper(inp: Any) -> str:
     """Help creating a more readable string representation of objects."""
     if isinstance(inp, (dict, MappingProxyType)):
         return ", ".join(
-            f"{repr_helper(key)}={repr_helper(item)}" for key, item in inp.items()
+            repr_helper(key) + "=" + repr_helper(item) for key, item in inp.items()
         )
     if isinstance(inp, datetime):
         return as_local(inp).isoformat()
@@ -134,6 +91,22 @@ def ensure_unique_string(
 
     return test_string
 
+def get_local_ip6(interface) -> str:
+    """Try to determine the stable IPv6 address of the smallest scope."""
+    try:
+        # We will have to loop through and evaluate each address to workout its scope, network reachablity, and if it is tempoary
+        addresses=socket.getaddrinfo(socket.gethostname(), None, family=socket.AF_INET6)
+        addresses.reverse()# Reversing so that Link local addresses are first
+        for addrinfo in addresses:
+            ip = addrinfo[-1][0]
+            # check if it is link local, if its not its the lowest scope we need and will return it
+            if not is_link_local(ip):
+                return ip
+    except:
+        #catch all errors, assuming any error means we should return localhost
+    finally:
+        sock.close()
+    return "::1"
 
 # Taken from: http://stackoverflow.com/a/11735897
 def get_local_ip() -> str:
@@ -145,7 +118,7 @@ def get_local_ip() -> str:
         sock.connect(("8.8.8.8", 80))
 
         return sock.getsockname()[0]  # type: ignore
-    except OSError:
+    except socket.error:
         try:
             return socket.gethostbyname(socket.gethostname())
         except socket.gaierror:
@@ -258,6 +231,7 @@ class Throttle:
 
             If we cannot acquire the lock, it is running so return None.
             """
+            # pylint: disable=protected-access
             if hasattr(method, "__self__"):
                 host = getattr(method, "__self__")
             elif is_func:
@@ -265,14 +239,12 @@ class Throttle:
             else:
                 host = args[0] if args else wrapper
 
-            # pylint: disable=protected-access # to _throttle
             if not hasattr(host, "_throttle"):
                 host._throttle = {}
 
             if id(self) not in host._throttle:
                 host._throttle[id(self)] = [threading.Lock(), None]
             throttle = host._throttle[id(self)]
-            # pylint: enable=protected-access
 
             if not throttle[0].acquire(False):
                 return throttled_value()
