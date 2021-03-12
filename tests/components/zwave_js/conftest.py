@@ -240,6 +240,12 @@ def nortek_thermostat_state_fixture():
     return json.loads(load_fixture("zwave_js/nortek_thermostat_state.json"))
 
 
+@pytest.fixture(name="srt321_hrt4_zw_state", scope="session")
+def srt321_hrt4_zw_state_fixture():
+    """Load the climate HRT4-ZW / SRT321 / SRT322 thermostat node state fixture data."""
+    return json.loads(load_fixture("zwave_js/srt321_hrt4_zw_state.json"))
+
+
 @pytest.fixture(name="chain_actuator_zws12_state", scope="session")
 def window_cover_state_fixture():
     """Load the window cover node state fixture data."""
@@ -280,6 +286,18 @@ def ge_12730_state_fixture():
 def aeotec_radiator_thermostat_state_fixture():
     """Load the Aeotec Radiator Thermostat node state fixture data."""
     return json.loads(load_fixture("zwave_js/aeotec_radiator_thermostat_state.json"))
+
+
+@pytest.fixture(name="inovelli_lzw36_state", scope="session")
+def inovelli_lzw36_state_fixture():
+    """Load the Inovelli LZW36 node state fixture data."""
+    return json.loads(load_fixture("zwave_js/inovelli_lzw36_state.json"))
+
+
+@pytest.fixture(name="null_name_check_state", scope="session")
+def null_name_check_state_fixture():
+    """Load the null name check node state fixture data."""
+    return json.loads(load_fixture("zwave_js/null_name_check_state.json"))
 
 
 @pytest.fixture(name="client")
@@ -417,6 +435,14 @@ def nortek_thermostat_fixture(client, nortek_thermostat_state):
     return node
 
 
+@pytest.fixture(name="srt321_hrt4_zw")
+def srt321_hrt4_zw_fixture(client, srt321_hrt4_zw_state):
+    """Mock a HRT4-ZW / SRT321 / SRT322 thermostat node."""
+    node = Node(client, copy.deepcopy(srt321_hrt4_zw_state))
+    client.driver.controller.nodes[node.node_id] = node
+    return node
+
+
 @pytest.fixture(name="aeotec_radiator_thermostat")
 def aeotec_radiator_thermostat_fixture(client, aeotec_radiator_thermostat_state):
     """Mock a Aeotec thermostat node."""
@@ -470,6 +496,14 @@ def in_wall_smart_fan_control_fixture(client, in_wall_smart_fan_control_state):
     return node
 
 
+@pytest.fixture(name="null_name_check")
+def null_name_check_fixture(client, null_name_check_state):
+    """Mock a node with no name."""
+    node = Node(client, copy.deepcopy(null_name_check_state))
+    client.driver.controller.nodes[node.node_id] = node
+    return node
+
+
 @pytest.fixture(name="multiple_devices")
 def multiple_devices_fixture(
     client, climate_radio_thermostat_ct100_plus_state, lock_schlage_be469_state
@@ -510,5 +544,13 @@ def aeon_smart_switch_6_fixture(client, aeon_smart_switch_6_state):
 def ge_12730_fixture(client, ge_12730_state):
     """Mock a GE 12730 fan controller node."""
     node = Node(client, copy.deepcopy(ge_12730_state))
+    client.driver.controller.nodes[node.node_id] = node
+    return node
+
+
+@pytest.fixture(name="inovelli_lzw36")
+def inovelli_lzw36_fixture(client, inovelli_lzw36_state):
+    """Mock a Inovelli LZW36 fan controller node."""
+    node = Node(client, copy.deepcopy(inovelli_lzw36_state))
     client.driver.controller.nodes[node.node_id] = node
     return node
